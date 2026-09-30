@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= item.name %>
+    </title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="mobile-frame">
+        <a href="/menu" class="back-btn">&larr; ย้อนกลับ</a>
+
+        <div class="detail-container">
+            <img src="/images/<%= item.pimage %>" class="detail-img" alt="<%= item.name %>">
+            <div class="detail-header">
+                <h3>
+                    <%= item.name %>
+                </h3>
+                <span class="price">
+                    <%= item.price %> ฿
+                </span>
+            </div>
+            <p class="description">
+                <%= item.description %>
+            </p>
+
+            <form action="/cart/add" method="POST" class="add-form">
+                <input type="hidden" name="menu_id" value="<%= item.id %>">
+                <div class="qty-picker">
+                    <button type="button" onclick="this.nextElementSibling.stepDown()">-</button>
+                    <input type="number" name="quantity" value="1" min="1" readonly>
+                    <button type="button" onclick="this.previousElementSibling.stepUp()">+</button>
+                </div>
+                <button type="submit" class="btn-green">เพิ่มลงตะกร้า</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

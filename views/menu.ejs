@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เมนูอาหาร</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="mobile-frame">
+        <header class="top-nav">
+            <select class="dropdown-select">
+                <option>เมนูแนะนำ</option>
+            </select>
+            <span class="user-greeting">สวัสดี, <%= username %></span>
+        </header>
+
+        <div class="menu-grid">
+            <% items.forEach(item=> { %>
+                <div class="menu-card">
+                    <a href="/menu/<%= item.id %>">
+                        <img src="/images/<%= item.pimage %>" alt="<%= item.name %>">
+                    </a>
+                    <div class="menu-info">
+                        <span class="item-title">
+                            <%= item.name %>
+                        </span>
+                        <span class="item-price">
+                            <%= item.price %> ฿
+                        </span>
+                    </div>
+                    <form action="/cart/add" method="POST">
+                        <input type="hidden" name="menu_id" value="<%= item.id %>">
+                        <button type="submit" class="add-btn">+</button>
+                    </form>
+                </div>
+                <% }) %>
+        </div>
+
+        <div class="bottom-bar">
+            <a href="/cart" class="cart-summary-link">
+                <span>รายการที่เลือกไว้</span>
+                <span>
+                    <%= cartCount %> รายการ &rarr;
+                </span>
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

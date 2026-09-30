@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติการสั่งซื้อ</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="mobile-frame">
+        <a href="/menu" class="back-btn">&larr; กลับหน้าเมนู</a>
+        <h3>ประวัติการสั่งซื้อของคุณ</h3>
+
+        <div class="history-list">
+            <% if (orders.length===0) { %>
+                <p>ยังไม่มีประวัติการสั่งซื้อ</p>
+                <% } else { %>
+                    <% orders.forEach(order=> { %>
+                        <div class="history-card">
+                            <div class="history-header">
+                                <span>คำสั่งซื้อ #<%= order.id %></span>
+                                <span class="status-badge">
+                                    <%= order.status %>
+                                </span>
+                            </div>
+                            <p>ยอดรวม: <strong>
+                                    <%= order.total_price %> ฿
+                                </strong></p>
+                            <small>
+                                <%= order.created_at %>
+                            </small>
+                        </div>
+                        <% }) %>
+                            <% } %>
+        </div>
+    </div>
+</body>
+
+</html>

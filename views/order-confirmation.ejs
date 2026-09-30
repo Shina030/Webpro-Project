@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ยืนยันคำสั่งซื้อ</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="mobile-frame">
+        <div class="confirmation-box">
+            <h3>รายการอาหารที่สั่ง</h3>
+            <p><strong>คุณ<%= order.customer_name %></strong></p>
+            <div class="order-summary">
+                <% items.forEach(item=> { %>
+                    <div class="summary-row">
+                        <span>
+                            <%= item.name %> (x<%= item.quantity %>)
+                        </span>
+                        <span>
+                            <%= item.price * item.quantity %> ฿
+                        </span>
+                    </div>
+                    <% }) %>
+            </div>
+            <hr>
+            <h4>ราคารวมทั้งสิ้น: <%= order.total_price %> ฿</h4>
+
+            <div class="qr-container">
+                <p>สแกน QR Code เพื่อชำระเงิน</p>
+                <img src="/images/qr-placeholder.png" alt="QR Code" class="qr-img">
+                <div>
+                    <span class="status-badge">
+                        <%= order.status %>
+                    </span>
+                </div>
+            </div>
+
+            <a href="/menu" class="btn-green"
+                style="display:block; text-align:center; text-decoration:none; margin-top:15px;">กลับสู่หน้าหลัก</a>
+        </div>
+    </div>
+</body>
+
+</html>
