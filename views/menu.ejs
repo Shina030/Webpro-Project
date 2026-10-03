@@ -5,49 +5,105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>เมนูอาหาร</title>
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
     <div class="mobile-frame">
-        <header class="top-nav">
-            <select class="dropdown-select">
-                <option>เมนูแนะนำ</option>
+        <div class="header-user">
+            <select name="category" id="category-select" class="category-dropdown" onchange="filterCategory()">
+                <option value="all">เมนูทั้งหมด</option>
+                <option value="sushi-sashimi">ซูชิและซาซิมิ</option>
+                <option value="rice">ข้าว</option>
+                <option value="teppanyaki">เทปันยากิ</option>
+                <option value="tonkatsu">ทงคัตซึ</option>
+                <option value="ramen">ราเมน</option>
+                <option value="appetizer">ของทานเล่น</option>
+                <option value="salad">สลัด</option>
+                <option value="dessert">ของหวาน</option>
+                <option value="drink">เครื่องดื่ม</option>
             </select>
             <span class="user-greeting">สวัสดี, <%= username %></span>
-        </header>
+        </div>
 
-        <div class="menu-grid">
-            <% items.forEach(item=> { %>
-                <div class="menu-card">
-                    <a href="/menu/<%= item.id %>">
-                        <img src="/images/<%= item.pimage %>" alt="<%= item.name %>">
-                    </a>
-                    <div class="menu-info">
-                        <span class="item-title">
-                            <%= item.name %>
-                        </span>
-                        <span class="item-price">
-                            <%= item.price %> ฿
-                        </span>
+        <div class="menu-grid" id="menu-grid">
+            <% items.forEach(function(item) { %>
+                <div class="menu-card" data-id="<%= item.id %>">
+                    <div class="img-container">
+                        <a href="/menu/<%= item.id %>">
+                            <img src="/menu_pic/<%= item.pimage %>.png" alt="<%= item.name %>" class="menu-img">
+                        </a>
+                        <form action="/cart/add" method="POST" class="add-form">
+                            <input type="hidden" name="menu_id" value="<%= item.id %>">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="plus-btn">+</button>
+                        </form>
                     </div>
-                    <form action="/cart/add" method="POST">
-                        <input type="hidden" name="menu_id" value="<%= item.id %>">
-                        <button type="submit" class="add-btn">+</button>
-                    </form>
+
+                    <div class="item-info">
+                        <div class="item-title">
+                            <%= item.name %>
+                        </div>
+                        <div class="price">
+                            <%= item.price %> ฿
+                        </div>
+                    </div>
                 </div>
-                <% }) %>
+                <% }); %>
         </div>
 
-        <div class="bottom-bar">
-            <a href="/cart" class="cart-summary-link">
-                <span>รายการที่เลือกไว้</span>
-                <span>
-                    <%= cartCount %> รายการ &rarr;
-                </span>
-            </a>
-        </div>
+        <% if (cartCount> 0) { %>
+            <div class="cart-bar">
+                <div class="cart-info">ตะกร้าของคุณ (<%= cartCount %> รายการ)</div>
+                <a href="/cart" class="view-cart-btn">ดูตะกร้า</a>
+            </div>
+            <% } %>
     </div>
+
+    <script>
+        function filterCategory() {
+            const selectedCategory = document.getElementById('category-select').value;
+            const cards = document.querySelectorAll('.menu-card');
+
+            cards.forEach(card => {
+                const itemId = card.getAttribute('data-id'); // เช่น A01, B02, F01 ฯลฯ
+                let show = false;
+
+                if (selectedCategory === 'all') {
+                    show = true;
+                } else if (selectedCategory === 'sushi-sashimi') {
+                    // A01 - A16
+                    show = /^A(0[1-9]|1[0-6])$/.test(itemId);
+                } else if (selectedCategory === 'rice') {
+                    // B01 - B12
+                    show = /^B(0[1-9]|1[0-2])$/.test(itemId);
+                } else if (selectedCategory === 'teppanyaki') {
+                    // C01 - C04
+                    show = /^C(0[1-4])$/.test(itemId);
+                } else if (selectedCategory === 'tonkatsu') {
+                    // D01 - D03
+                    show = /^D(0[1-3])$/.test(itemId);
+                } else if (selectedCategory === 'ramen') {
+                    // E01 - F03
+                    show = /^E[0-9]{2}$/.test(itemId) || /^F(0[1-3])$/.test(itemId);
+                } else if (selectedCategory === 'appetizer') {
+                    // G01 - G08
+                    show = /^G(0[1-8])$/.test(itemId);
+                } else if (selectedCategory === 'salad') {
+                    // H01 - H05
+                    show = /^H(0[1-5])$/.test(itemId);
+                } else if (selectedCategory === 'dessert') {
+                    // I01 - I08
+                    show = /^I(0[1-8])$/.test(itemId);
+                } else if (selectedCategory === 'drink') {
+                    // J01 - J05
+                    show = /^J(0[1-5])$/.test(itemId);
+                }
+
+                card.style.display = show ? 'flex' : 'none';
+            });
+        }
+    </script>
 </body>
 
 </html>
