@@ -16,9 +16,9 @@ let db = new sqlite3.Database('./restaurant.db', (err) => {
     console.log('Connected to the SQLite database: restaurant.db');
 });
 
-// Middleware Setup (Matching Lab 11 & Lab 12)
+// Middleware Setup
 app.use(cookieParser());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.json());
@@ -41,6 +41,35 @@ app.use((req, res, next) => {
     next();
 });
 
+// Complete ordered list of images matching your exact folder counts:
+// A (16), B (12), C (4), D (3), E (8), F (3), G (8), H (5), I (8), J (5)
+const imageCounts = {
+    A: 16,
+    B: 12,
+    C: 4,
+    D: 3,
+    E: 8,
+    F: 3,
+    G: 8,
+    H: 5,
+    I: 8,
+    J: 5
+};
+
+const imageCodes = [];
+Object.keys(imageCounts).forEach(prefix => {
+    const count = imageCounts[prefix];
+    for (let i = 1; i <= count; i++) {
+        imageCodes.push(`${prefix}${String(i).padStart(2, '0')}`);
+    }
+});
+
+// Maps row index 0, 1, 2... directly to imageCodes[0], imageCodes[1], imageCodes[2]...
+function getSequentialPictureCode(index) {
+    const safeIndex = index % imageCodes.length;
+    return imageCodes[safeIndex];
+}
+
 // ================= ROUTES ================= //
 
 // Screen 1: Welcome & Login
@@ -57,19 +86,25 @@ app.post('/login', (req, res) => {
     res.redirect('/');
 });
 
-// Screen 2: Menu Catalog (Fix: Uses menu_items table)
+// Screen 2: Menu Catalog
 app.get('/menu', (req, res) => {
     if (!req.session.username) return res.redirect('/');
 
-    const query = 'SELECT menu_id AS id, menu_name AS name, price, menu_description AS description, menu_picture AS pimage FROM menu_items';
+    const query = 'SELECT menu_id AS id, menu_name AS name, price, menu_description AS description, menu_picture AS pimage FROM menu_items ORDER BY menu_id ASC';
     db.all(query, (err, rows) => {
         if (err) {
             console.error("Database query error:", err.message);
             return res.status(500).send("Database error: " + err.message);
         }
+
+        const formattedRows = rows.map((item, index) => ({
+            ...item,
+            pimage: getSequentialPictureCode(index)
+        }));
+
         const totalItems = req.session.cart.reduce((sum, item) => sum + item.quantity, 0);
         res.render('menu', {
-            items: rows,
+            items: formattedRows,
             cartCount: totalItems,
             username: req.session.username
         });
@@ -79,12 +114,21 @@ app.get('/menu', (req, res) => {
 // Screen 3: Item Detail View
 app.get('/menu/:id', (req, res) => {
     const itemId = req.params.id;
-    const query = 'SELECT menu_id AS id, menu_name AS name, price, menu_description AS description, menu_picture AS pimage FROM menu_items WHERE menu_id = ?';
-    db.get(query, [itemId], (err, row) => {
-        if (err || !row) {
+
+    const query = 'SELECT menu_id AS id, menu_name AS name, price, menu_description AS description, menu_picture AS pimage FROM menu_items ORDER BY menu_id ASC';
+    db.all(query, (err, rows) => {
+        if (err || !rows) {
             return res.redirect('/menu');
         }
-        res.render('item-detail', { item: row });
+
+        const index = rows.findIndex(row => row.id == itemId);
+        if (index === -1) {
+            return res.redirect('/menu');
+        }
+
+        const item = rows[index];
+        item.pimage = `/menu_pic/${getSequentialPictureCode(index)}.png`;
+        res.render('item-detail', { item });
     });
 });
 
@@ -142,7 +186,6 @@ app.post('/order/checkout', (req, res) => {
     const cart = req.session.cart;
     if (!cart || cart.length === 0) return res.redirect('/menu');
 
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const customerName = req.session.username || 'ลูกค้า';
 
     // 1. Create Customer record
@@ -171,7 +214,7 @@ app.post('/order/checkout', (req, res) => {
             });
             stmt.finalize();
 
-            req.session.cart = []; // Clear session cart
+            req.session.cart = [];
             res.redirect(`/order/confirmation/${orderId}`);
         });
     });
@@ -180,18 +223,19 @@ app.post('/order/checkout', (req, res) => {
 // Order Confirmation View
 app.get('/order/confirmation/:id', (req, res) => {
     const orderId = req.params.id;
-    const orderQuery = 'SELECT * FROM orders WHERE order_id = ?';
+    const orderQuery = 'SELECT orders.*, customer.customer_name FROM orders JOIN customer ON orders.customer_id = customer.customer_id WHERE orders.order_id = ?';
     db.get(orderQuery, [orderId], (err, order) => {
         if (err || !order) return res.redirect('/menu');
 
         const itemsQuery = `
-      SELECT order_detail.*, menu_items.menu_name AS name 
-      FROM order_detail 
-      JOIN menu_items ON order_detail.menu_id = menu_items.menu_id 
-      WHERE order_id = ?
-    `;
+          SELECT order_detail.*, menu_items.menu_name AS name, order_detail.unit_price AS price
+          FROM order_detail 
+          JOIN menu_items ON order_detail.menu_id = menu_items.menu_id 
+          WHERE order_id = ?
+        `;
         db.all(itemsQuery, [orderId], (err, items) => {
-            res.render('order-confirmation', { order, items });
+            const total_price = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            res.render('order-confirmation', { order: { ...order, total_price }, items });
         });
     });
 });

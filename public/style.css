@@ -1,228 +1,199 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #eef2f5;
+/* Enable Smooth Scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* General Resets */
+* {
+    box-sizing: border-box;
     margin: 0;
+    padding: 0;
+    font-family: 'Sukhumvit Set', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #333;
     display: flex;
     justify-content: center;
     padding: 20px;
 }
 
 .mobile-frame {
-    width: 380px;
+    width: 100%;
+    max-width: 1000px;
     background: #ffffff;
-    border-radius: 25px;
     padding: 20px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-    min-height: 650px;
+    padding-bottom: 120px;
+}
+
+/* Header User Styling */
+.header-user {
     display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-}
-
-.btn-green {
-    background-color: #1b5e20;
-    color: white;
-    border: none;
-    padding: 12px;
-    width: 100%;
-    border-radius: 12px;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.btn-green:disabled {
-    background-color: #ccc;
-}
-
-.btn-outline {
-    display: block;
-    border: 1px solid #ccc;
-    background: white;
-    padding: 10px;
-    border-radius: 10px;
-    text-align: center;
-    text-decoration: none;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-input[type="text"] {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    box-sizing: border-box;
-}
-
-.top-nav {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
+.category-dropdown {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background-color: #fff;
+}
+
+.user-greeting {
+    font-size: 0.95rem;
+    color: #333;
+}
+
+/* Menu Grid Layout: 2 Columns on Mobile, 4 Columns on PC */
 .menu-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
-
-.menu-card {
-    background: #f9f9f9;
-    border-radius: 15px;
-    padding: 10px;
-    text-align: center;
-    position: relative;
-}
-
-.menu-card img {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
     width: 100%;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 10px;
 }
 
-.menu-info {
+@media (min-width: 768px) {
+    .menu-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+}
+
+/* Menu Item Card */
+.menu-card {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-top: 8px;
+    width: 100%;
+}
+
+/* Image Container Box with Rounded Corners and Overflow Clipping */
+.img-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: #ffffff;
+    border: 2px solid #a0a0a0;
+    border-radius: 14px;
+    overflow: hidden;
+    /* Clips inner images to match the container's curved border */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    /* Removed padding so photos touch the curved border */
+    margin-bottom: 8px;
+}
+
+.img-container a {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Full Image Centered & Curved to Fit Container */
+.img-container img,
+.menu-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Ensures images fill the square completely */
+    border-radius: 12px;
+    /* Curves the image corners inside the container */
+    display: block;
+}
+
+/* Floating Form Shifted Up & Left */
+.add-form {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    z-index: 10;
+}
+
+/* Centered Plus Button */
+.plus-btn,
+.img-container button {
+    width: 28px;
+    height: 28px;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #222222;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    line-height: 0;
+    padding: 0 0 2px 0;
+}
+
+.plus-btn:hover,
+.img-container button:hover {
+    background-color: #f5f5f5;
+}
+
+/* Text Content Directly Below (Left-Aligned) */
+.item-info {
+    width: 100%;
+    text-align: left;
+    padding-left: 2px;
 }
 
 .item-title {
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #222222;
+    margin-bottom: 2px;
 }
 
-.item-price {
-    font-size: 13px;
-    color: #666;
+.price {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #444444;
 }
 
-.add-btn {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: #1b5e20;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.bottom-bar {
-    margin-top: auto;
-    background: #e8f5e9;
-    padding: 12px;
-    border-radius: 15px;
-}
-
-.cart-summary-link {
-    display: flex;
-    justify-content: space-between;
-    text-decoration: none;
-    color: #1b5e20;
-    font-weight: bold;
-}
-
-.cart-row,
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
-}
-
-.qty-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.qty-controls button {
-    background: #e0e0e0;
-    border: none;
-    width: 25px;
-    height: 25px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.checkout-footer {
-    margin-top: auto;
-}
-
-.total-bar {
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
-.qr-container {
-    text-align: center;
-    margin: 15px 0;
-}
-
-.qr-img {
-    width: 150px;
-    height: 150px;
-}
-
-.status-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-    padding: 5px 12px;
+/* Sticky Bottom Cart Bar - Slightly bolder lightgray border */
+.cart-bar {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 960px;
+    background: #f1f3f5;
+    border: 1.5px solid lightgray;
     border-radius: 12px;
-    display: inline-block;
-    font-size: 14px;
-    margin-top: 10px;
-}
-
-.back-btn {
-    text-decoration: none;
-    color: #333;
-    font-weight: bold;
-    margin-bottom: 10px;
-    display: inline-block;
-}
-
-.detail-img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    border-radius: 15px;
-}
-
-.qty-picker {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.qty-picker input {
-    width: 50px;
-    text-align: center;
-    margin-bottom: 0;
-}
-
-.history-card {
-    background: #f9f9f9;
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 10px;
-}
-
-.history-header {
+    padding: 12px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+}
+
+.cart-info {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #222222;
+}
+
+.view-cart-btn {
+    background-color: #2e7d32;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
 }
