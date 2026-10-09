@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title><%= item.name %></title><link rel="stylesheet" href="/style.css"></head>
+<body><div class="mobile-frame narrow-frame">
+  <a href="/customer/menu" class="back-btn">← ย้อนกลับ</a>
+  <div class="detail-container">
+    <img src="/menu_pic/<%= item.pimage %>.png" class="detail-img" alt="<%= item.name %>">
+    <div class="detail-header"><h3><%= item.name %></h3><span class="price"><%= Number(item.price).toFixed(2) %> ฿</span></div>
+    <p class="description"><%= item.description %></p>
+    <form action="/customer/cart/add" method="POST" class="detail-add-form">
+      <input type="hidden" name="menu_id" value="<%= item.id %>">
+      <div class="qty-picker"><button type="button" onclick="changeQty(-1)">−</button><input id="qty" type="number" name="quantity" value="1" min="1" max="5" readonly><button type="button" onclick="changeQty(1)">+</button></div>
+      <button type="submit" class="btn-green">เพิ่มลงตะกร้า</button>
+    </form>
+  </div>
+</div><script>function changeQty(d){const q=document.getElementById('qty');q.value=Math.max(1,Math.min(5,Number(q.value)+d))}</script></body></html>
