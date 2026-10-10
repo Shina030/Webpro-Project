@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ชำระเงิน</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="mobile-frame narrow-frame payment-page">
+  <div class="page-title-row">
+    <a href="/customer/history" class="back-btn">←</a>
+    <h3>ชำระเงิน <%= mode === 'TABLE' ? '(รวมบิล)' : '(แยกบิล)' %></h3>
+    <span></span>
+  </div>
+
+  <div class="history-table-note">
+    โต๊ะ <strong><%= customer.table_number %></strong> •
+    <%= mode === 'TABLE' ? 'รายการค้างชำระของทุกคนในโต๊ะ' : 'รายการที่คุณรับผิดชอบ' %>
+  </div>
+
+  <% if (selectedBills.length === 0) { %>
+    <div class="paid-all payment-empty">✓ ไม่มีรายการค้างชำระสำหรับบิลนี้</div>
+  <% } %>
+
+  <% selectedBills.forEach(bill => { %>
+    <section class="payment-person-card">
+      <h4><%= bill.customer_name %><%= Number(bill.customer_id) === Number(customer.customer_id) ? ' (คุณ)' : '' %></h4>
+      <div class="payment-items">
+        <% bill.items.forEach(item => { %>
+          <div class="payment-item-row">
+            <div>
+              <strong><%= item.menu_name %></strong>
+              <small>ออเดอร์ #<%= item.order_id %><%= item.shared ? ' • หาร ' + item.share_count + ' คน' : '' %></small>
+            </div>
+            <span>× <%= item.quantity %></span>
+            <b><%= Number(item.share_amount).toFixed(2) %> ฿</b>
+          </div>
+        <% }) %>
+      </div>
+      <div class="money-row"><span>ยอดอาหาร</span><strong><%= Number(bill.subtotal).toFixed(2) %> ฿</strong></div>
+      <div class="money-row"><span>ค่าบริการ 7%</span><strong><%= Number(bill.service_fee).toFixed(2) %> ฿</strong></div>
+      <div class="money-row grand"><span>ยอดสุทธิ</span><strong><%= Number(bill.total).toFixed(2) %> ฿</strong></div>
+    </section>
+  <% }) %>
+
+  <% if (selectedBills.length > 0) { %>
+    <section class="payment-total-card">
+      <div class="money-row"><span>ยอดอาหารรวม</span><strong><%= selectedSubtotal.toFixed(2) %> ฿</strong></div>
+      <div class="money-row"><span>ค่าบริการ 7%</span><strong><%= selectedService.toFixed(2) %> ฿</strong></div>
+      <div class="money-row grand"><span>ยอดที่ต้องชำระ</span><strong><%= selectedTotal.toFixed(2) %> ฿</strong></div>
+    </section>
+  <% } %>
+
+  <div class="payment-bottom-summary">
+    <div>
+      <span><%= mode === 'TABLE' ? 'รวมบิลที่ยังค้างทั้งโต๊ะ' : 'ยอดแยกบิลของคุณ' %></span>
+      <strong><%= selectedTotal.toFixed(2) %> ฿</strong>
+    </div>
+    <button class="scan-pay-btn" type="button" onclick="openPayment()" <%= selectedTotal <= 0 ? 'disabled' : '' %>>
+      <span class="qr-mini">▦</span> สแกนจ่าย
+    </button>
+  </div>
+</div>
+
+<div class="customer-modal" id="payModal">
+  <div class="customer-modal-box pay-modal-box">
+    <button class="modal-x" type="button" onclick="closePayment()">×</button>
+    <h3>THAI QR PAYMENT • <%= mode === 'TABLE' ? 'รวมบิล' : 'แยกบิล' %></h3>
+    <div class="qr-loading" id="qrLoading">กำลังสร้าง QR...</div>
+    <img id="payQr" class="customer-qr" style="display:none" alt="QR Payment">
+    <div class="pay-amount">ยอดชำระ <strong id="payAmount"><%= selectedTotal.toFixed(2) %></strong> ฿</div>
+    <p class="mock-note">QR นี้เป็นระบบจำลองสำหรับโปรเจกต์ ไม่มีการตัดเงินจริง</p>
+    <div class="modal-actions">
+      <button class="btn-outline" type="button" onclick="closePayment()">ยกเลิก</button>
+      <button class="btn-green" id="confirmPay" type="button" onclick="confirmPayment()" disabled>ยืนยันการชำระเงิน</button>
+    </div>
+  </div>
+</div>
+
+<div class="customer-modal" id="waitingModal">
+  <div class="customer-modal-box center-box">
+    <div class="spinner"></div>
+    <h3>กำลังตรวจสอบการชำระเงิน</h3>
+    <p>ระบบทดลองจะยืนยันอัตโนมัติใน <strong id="countdown">3</strong> วินาที</p>
+  </div>
+</div>
+
+<div class="customer-modal" id="successModal">
+  <div class="customer-modal-box center-box">
+    <div class="success-circle">✓</div>
+    <h3>ชำระเงินสำเร็จ</h3>
+    <p id="successText"></p>
+    <button class="btn-green" type="button" onclick="location.href='/customer/history'">ตกลง</button>
+  </div>
+</div>
+
+<script>
+const paymentType = '<%= mode %>';
+
+async function openPayment(){
+  const modal = document.getElementById('payModal');
+  const qr = document.getElementById('payQr');
+  const loading = document.getElementById('qrLoading');
+  const confirmButton = document.getElementById('confirmPay');
+
+  modal.classList.add('show');
+  qr.style.display = 'none';
+  loading.style.display = 'block';
+  confirmButton.disabled = true;
+
+  try {
+    const response = await fetch('/customer/api/payment/qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: paymentType })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.message || 'ไม่สามารถสร้าง QR ได้');
+
+    qr.src = data.qrDataUrl;
+    qr.style.display = 'block';
+    loading.style.display = 'none';
+    document.getElementById('payAmount').textContent = Number(data.total).toFixed(2);
+    confirmButton.disabled = false;
+  } catch (error) {
+    closePayment();
+    alert(error.message);
+  }
+}
+
+function closePayment(){
+  document.getElementById('payModal').classList.remove('show');
+}
+
+async function confirmPayment(){
+  closePayment();
+  document.getElementById('waitingModal').classList.add('show');
+  let seconds = 3;
+  document.getElementById('countdown').textContent = seconds;
+
+  const timer = setInterval(async () => {
+    seconds -= 1;
+    document.getElementById('countdown').textContent = Math.max(0, seconds);
+    if (seconds > 0) return;
+
+    clearInterval(timer);
+    try {
+      const response = await fetch('/customer/api/payment/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: paymentType })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || 'ชำระเงินไม่สำเร็จ');
+
+      document.getElementById('waitingModal').classList.remove('show');
+      document.getElementById('successText').textContent =
+        `ชำระ ${Number(data.total).toFixed(2)} บาท` +
+        (data.sessionStatus === 'CLEANING' ? ' • ทุกคนชำระครบแล้ว โต๊ะเปลี่ยนเป็นรอทำความสะอาด' : '');
+      document.getElementById('successModal').classList.add('show');
+    } catch (error) {
+      document.getElementById('waitingModal').classList.remove('show');
+      alert(error.message);
+    }
+  }, 1000);
+}
+
+document.getElementById('payModal').addEventListener('click', event => {
+  if (event.target.id === 'payModal') closePayment();
+});
+</script>
+</body>
+</html>

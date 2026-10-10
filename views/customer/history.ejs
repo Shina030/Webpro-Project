@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ประวัติการสั่งซื้อ</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="mobile-frame narrow-frame history-page">
+  <div class="page-title-row">
+    <a href="/customer/menu" class="back-btn">←</a>
+    <h3>ประวัติการสั่งซื้อ</h3>
+    <span></span>
+  </div>
+
+  <div class="history-table-note">
+    โต๊ะ <strong><%= customer.table_number %></strong> • แสดงรายการของทุกคนในโต๊ะ เพื่อให้ตรวจสอบผู้ร่วมหารได้
+  </div>
+
+  <% if (sharingLocked) { %>
+    <div class="notice-box">โต๊ะนี้เริ่มมีการชำระเงินแล้ว จึงล็อกการแก้ผู้ร่วมหารเพื่อไม่ให้ยอดที่ชำระไปแล้วเปลี่ยน</div>
+  <% } %>
+
+  <div class="history-list">
+    <% if (orders.length === 0) { %>
+      <div class="empty-msg">ยังไม่มีประวัติการสั่งซื้อ</div>
+    <% } %>
+
+    <% orders.forEach(order => {
+      const statusText = order.order_status === 'SERVED' ? 'เสร็จแล้ว' : 'กำลังเตรียม';
+      const statusClass = order.order_status === 'SERVED' ? 'done' : 'preparing';
+    %>
+      <section class="history-card">
+        <div class="history-header">
+          <div>
+            <strong><%= order.customer_name %> • ออเดอร์ #<%= order.order_id %></strong>
+            <small><%= order.order_time %></small>
+          </div>
+          <span class="status-chip order-status <%= statusClass %>" data-order-id="<%= order.order_id %>"><%= statusText %></span>
+        </div>
+
+        <% order.items.forEach(item => { %>
+          <div class="history-item">
+            <div class="history-item-main">
+              <span><%= item.menu_name %></span>
+              <strong>× <%= item.quantity %></strong>
+              <span><%= (item.unit_price * item.quantity).toFixed(2) %> ฿</span>
+            </div>
+            <div class="participant-line">
+              <span>ผู้ร่วมรับผิดชอบ:</span>
+              <span class="participant-names"><%= item.participants.map(p => p.customer_name).join(', ') || '-' %></span>
+            </div>
+          </div>
+        <% }) %>
+      </section>
+    <% }) %>
+  </div>
+
+  <div class="history-actions">
+    <a class="history-action share-action <%= sharingLocked ? 'disabled-link' : '' %>" href="<%= sharingLocked ? '#' : '/customer/history/share' %>">
+      <span>👥</span><strong>เลือกผู้ร่วมหาร</strong>
+    </a>
+    <a class="history-action table-action" href="/customer/payment?mode=TABLE">
+      <span>🍽️</span><strong>รวมบิล</strong>
+    </a>
+    <a class="history-action own-action" href="/customer/payment?mode=OWN">
+      <span>👤</span><strong>แยกบิล</strong>
+    </a>
+  </div>
+</div>
+
+<script>
+async function pollStatuses(){
+  try {
+    const response = await fetch('/customer/api/order-status', { cache: 'no-store' });
+    const data = await response.json();
+    if (!data.ok) return;
+
+    data.orders.forEach(order => {
+      const element = document.querySelector(`.order-status[data-order-id="${order.order_id}"]`);
+      if (!element) return;
+      const done = order.order_status === 'SERVED';
+      element.textContent = done ? 'เสร็จแล้ว' : 'กำลังเตรียม';
+      element.classList.toggle('done', done);
+      element.classList.toggle('preparing', !done);
+    });
+  } catch (error) {}
+}
+
+setInterval(pollStatuses, 2000);
+</script>
+</body>
+</html>

@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ชำระเงินที่เคาน์เตอร์ - <%= session.table_number %></title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Tahoma, sans-serif;
+      background: #f4f5f7;
+      color: #20242a;
+    }
+    button, input { font: inherit; }
+    .app {
+      width: min(1500px, 96vw);
+      min-height: 760px;
+      margin: 22px auto;
+      background: #fff;
+      border: 1px solid #dfe3e8;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .topbar {
+      height: 74px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 26px;
+      border-bottom: 1px solid #e6e8eb;
+    }
+    .back {
+      justify-self: start;
+      border: 0;
+      background: transparent;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #222831;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .back .arrow { font-size: 27px; line-height: 1; }
+    .title { margin: 0; font-size: 28px; font-weight: 800; }
+    .staff {
+      justify-self: end;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: #4c535c;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .staff-icon {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      background: #eef1f5;
+      border-radius: 50%;
+    }
+    .body {
+      min-height: 625px;
+      display: grid;
+      grid-template-columns: 42% 58%;
+    }
+    .left-panel {
+      padding: 16px 14px 14px;
+      border-right: 1px solid #dfe3e8;
+      display: flex;
+      flex-direction: column;
+      background: #fafbfc;
+    }
+    .table-header {
+      height: 50px;
+      background: #ef222c;
+      color: white;
+      border-radius: 7px 7px 0 0;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 18px;
+      font-weight: 800;
+    }
+    .table-header .number { font-size: 24px; margin-right: auto; }
+    .customer-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 10px;
+    }
+    .customer-row {
+      min-height: 62px;
+      border: 1px solid #dce1e6;
+      border-radius: 7px;
+      background: white;
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,.04);
+      transition: .15s ease;
+    }
+    .customer-row:hover { transform: translateY(-1px); border-color: #8dbce9; }
+    .customer-row.selected { border: 2px solid #1976d2; background: #f4f9ff; }
+    .status-dot { width: 16px; height: 16px; border-radius: 50%; }
+    .status-dot.paid { background: #2abe55; }
+    .status-dot.unpaid { background: #f12f36; }
+    .customer-name { color: #1262b3; font-size: 18px; font-weight: 800; }
+    .customer-status { font-weight: 800; font-size: 15px; }
+    .customer-status.paid { color: #29a94a; }
+    .customer-status.unpaid { color: #ef2a31; }
+    .customer-check {
+      width: 20px;
+      height: 20px;
+      display: none;
+      accent-color: #1976d2;
+    }
+    .left-panel.multi .customer-check { display: block; }
+    .left-panel.multi .status-dot { display: none; }
+    .multi-toggle {
+      margin-top: auto;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      padding-left: 8px;
+    }
+    .toggle-circle {
+      width: 21px;
+      height: 21px;
+      border: 2px solid #555e68;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+    }
+    .toggle-circle.active::after {
+      content: '';
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #1976d2;
+    }
+    .legend {
+      border-top: 1px solid #e1e4e8;
+      padding: 12px 7px 2px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: #626971;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 13px; height: 13px; border-radius: 50%; }
+    .legend-dot.yellow { background: #f2b51f; }
+    .legend-dot.gray { background: #9ea3a9; }
+
+    .right-panel {
+      padding: 18px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .empty-detail {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #9aa1a9;
+      gap: 12px;
+    }
+    .empty-detail .icon { font-size: 56px; opacity: .35; }
+    .empty-detail strong { font-size: 20px; }
+    .bill-content { display: none; flex: 1; flex-direction: column; min-height: 0; }
+    .bill-scroll { overflow: auto; padding-right: 4px; max-height: 440px; }
+    .person-section { margin-bottom: 18px; }
+    .person-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1262b3;
+      padding: 2px 0 9px;
+      border-bottom: 1px solid #dfe3e7;
+    }
+    .item-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 70px 145px;
+      gap: 10px;
+      min-height: 33px;
+      align-items: center;
+      font-size: 16px;
+      border-bottom: 1px dashed #eef0f2;
+    }
+    .item-row .qty { text-align: center; }
+    .item-row .price { text-align: right; font-variant-numeric: tabular-nums; }
+    .shared { color: #454b52; }
+    .shared-star { font-weight: 900; }
+    .bill-summary {
+      margin-top: auto;
+      border-top: 2px solid #d5d9de;
+      padding-top: 11px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 32px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .summary-row.total {
+      min-height: 46px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+    .summary-row.total .amount { color: #ef1e26; font-size: 24px; }
+    .share-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #6b727a;
+    }
+    .payment-actions {
+      margin-top: 13px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .payment-btn {
+      min-height: 58px;
+      border: 0;
+      border-radius: 7px;
+      color: white;
+      font-weight: 900;
+      font-size: 17px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,.12);
+    }
+    .payment-btn.qr { background: #0a4b8f; }
+    .payment-btn.cash { background: #f3b51c; color: #1e2227; }
+    .payment-btn:disabled { opacity: .38; cursor: default; box-shadow: none; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20,24,30,.48);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      width: min(520px, 95vw);
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 18px 55px rgba(0,0,0,.28);
+      overflow: hidden;
+    }
+    .confirm-modal { padding: 34px 30px 28px; text-align: center; }
+    .print-icon { font-size: 43px; margin-bottom: 12px; }
+    .confirm-text { font-size: 22px; font-weight: 900; line-height: 1.45; }
+    .modal-actions { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-btn { border: 0; border-radius: 7px; min-height: 48px; font-size: 17px; font-weight: 900; cursor: pointer; }
+    .cancel-btn { background: #b3b5b8; color: white; }
+    .confirm-btn { background: #28bd4e; color: white; }
+
+    .qr-payment-modal { width: min(560px, 95vw); padding: 28px 30px 26px; text-align: center; }
+    .qr-payment-head {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .qr-payment-head strong { grid-column: 2; font-size: 24px; }
+    .qr-payment-close {
+      grid-column: 3;
+      justify-self: end;
+      border: 0;
+      background: transparent;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      color: #20242a;
+    }
+    .qr-payment-image {
+      width: min(330px, 72vw);
+      aspect-ratio: 1;
+      object-fit: contain;
+      display: block;
+      margin: 8px auto 14px;
+    }
+    .qr-payment-amount {
+      font-size: 20px;
+      margin-top: 6px;
+    }
+    .qr-payment-amount strong {
+      color: #1474d4;
+      font-size: 34px;
+      margin: 0 4px;
+    }
+    .qr-payment-note {
+      margin-top: 12px;
+      color: #7a828b;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .qr-payment-actions {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .qr-payment-actions .cancel-pay {
+      background: white;
+      color: #30363d;
+      border: 2px solid #cbd2d9;
+    }
+    .qr-payment-actions .confirm-pay {
+      background: #2f8b36;
+      color: white;
+    }
+
+    .cash-modal { width: min(640px, 96vw); }
+    .cash-head {
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 18px;
+      border-bottom: 1px solid #ddd;
+    }
+    .cash-head strong { grid-column: 2; font-size: 23px; }
+    .cash-close { grid-column: 3; justify-self: end; border: 0; background: transparent; font-size: 25px; cursor: pointer; }
+    .cash-display { background: #eceeef; }
+    .cash-row-big {
+      min-height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 24px;
+      border-bottom: 2px solid white;
+    }
+    .cash-row-big span { font-weight: 700; color: #555d65; }
+    .cash-row-big strong { font-size: 42px; font-variant-numeric: tabular-nums; }
+    .cash-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 2px solid white;
+    }
+    .cash-box { padding: 13px 20px; min-height: 87px; }
+    .cash-box:first-child { border-right: 2px solid white; }
+    .cash-box span { display: block; font-size: 14px; font-weight: 700; color: #555d65; }
+    .cash-box strong { display: block; margin-top: 3px; font-size: 33px; text-align: center; font-variant-numeric: tabular-nums; }
+    .cash-box.change strong { color: #1474d4; }
+    .keypad { display: grid; grid-template-columns: repeat(5, 1fr); }
+    .key {
+      min-height: 68px;
+      border: 1px solid white;
+      background: #e2e4e6;
+      font-size: 26px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .key:hover { background: #d5d8db; }
+    .cash-ok {
+      width: 100%;
+      min-height: 68px;
+      border: 0;
+      background: #0e73d5;
+      color: white;
+      font-size: 28px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .cash-ok:disabled { background: #8fbde8; cursor: default; }
+
+    .status-modal { padding: 36px; text-align: center; }
+    .status-symbol { font-size: 58px; margin-bottom: 12px; }
+    .status-title { font-size: 25px; font-weight: 900; }
+    .status-text { margin-top: 9px; color: #656d76; line-height: 1.5; }
+    .single-action { margin-top: 24px; }
+    .single-action button { width: 100%; }
+
+    #printArea { display: none; }
+    .print-sheet {
+      width: 180mm;
+      margin: 0 auto;
+      padding: 12mm;
+      color: #111;
+      font-family: Arial, Tahoma, sans-serif;
+    }
+    .print-center { text-align: center; }
+    .print-title { font-size: 24px; font-weight: 900; margin-bottom: 5px; }
+    .print-subtitle { font-size: 16px; margin-bottom: 18px; }
+    .print-customer { font-size: 17px; font-weight: 900; margin: 14px 0 7px; border-bottom: 1px solid #aaa; padding-bottom: 5px; }
+    .print-item { display: grid; grid-template-columns: 1fr 55px 90px; gap: 8px; padding: 4px 0; font-size: 14px; }
+    .print-summary { margin-top: 13px; border-top: 1px solid #333; padding-top: 8px; }
+    .print-summary div { display: flex; justify-content: space-between; padding: 3px 0; }
+    .print-summary .grand { font-size: 20px; font-weight: 900; }
+    .print-qr { width: 230px; height: 230px; object-fit: contain; margin: 16px auto 6px; display: block; }
+    .print-mock { font-size: 11px; color: #555; margin-top: 6px; }
+
+    @media print {
+      @page { size: A4 portrait; margin: 10mm; }
+      body { background: white; }
+      body > * { visibility: hidden !important; }
+      #printArea, #printArea * { visibility: visible !important; }
+      #printArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .body { grid-template-columns: 1fr; }
+      .left-panel { border-right: 0; border-bottom: 1px solid #ddd; }
+      .right-panel { min-height: 560px; }
+      .title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="mainApp">
+    <header class="topbar">
+      <button class="back" onclick="location.href='/cashier'"><span class="arrow">←</span>กลับ</button>
+      <h1 class="title">ชำระเงินที่เคาน์เตอร์</h1>
+      <div class="staff"><span class="staff-icon">👤</span>พนักงานแคชเชียร์</div>
+    </header>
+
+    <section class="body">
+      <aside class="left-panel" id="leftPanel">
+        <div class="table-header">
+          <span class="number"><%= session.table_number %></span>
+          <span>◷</span>
+          <span>ลูกค้า <%= customers.length %> คน</span>
+        </div>
+
+        <div class="customer-list" id="customerList">
+          <% customers.forEach(customer => { %>
+            <div class="customer-row" data-id="<%= customer.customer_id %>" onclick="selectCustomer(<%= customer.customer_id %>)">
+              <input class="customer-check" type="checkbox" tabindex="-1" <%= customer.isPaid ? 'disabled' : '' %>>
+              <span class="status-dot <%= customer.isPaid ? 'paid' : 'unpaid' %>"></span>
+              <span class="customer-name"><%= customer.customer_name %></span>
+              <span class="customer-status <%= customer.isPaid ? 'paid' : 'unpaid' %>"><%= customer.isPaid ? 'ชำระเงินแล้ว' : 'ยังไม่ชำระเงิน' %></span>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="multi-toggle" onclick="toggleMultiMode()">
+          <span class="toggle-circle" id="multiCircle"></span>
+          <span>เลือกหลายรายการ</span>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><span class="legend-dot paid"></span>ชำระแล้ว</div>
+          <div class="legend-item"><span class="legend-dot unpaid"></span>ยังไม่ชำระ</div>
+          <div class="legend-item"><span class="legend-dot yellow"></span>กำลังทำความสะอาด</div>
+          <div class="legend-item"><span class="legend-dot gray"></span>ว่าง</div>
+        </div>
+      </aside>
+
+      <section class="right-panel">
+        <div class="empty-detail" id="emptyDetail">
+          <div class="icon">☰</div>
+          <strong>เลือกรายชื่อลูกค้า</strong>
+          <span>รายการอาหารและยอดชำระจะแสดงที่นี่</span>
+        </div>
+
+        <div class="bill-content" id="billContent">
+          <div class="bill-scroll" id="billScroll"></div>
+          <div class="bill-summary">
+            <div class="summary-row"><span>ยอดรวม</span><span id="subtotalText">0.00</span></div>
+            <div class="summary-row"><span>ค่าบริการเพิ่มเติม 7%</span><span id="serviceText">0.00</span></div>
+            <div class="summary-row total"><span>ยอดที่ต้องชำระ</span><span class="amount" id="totalText">0.00</span></div>
+            <div class="share-note">* รายการที่มีผู้ร่วมรับผิดชอบจะแสดงยอดที่หารแล้วของลูกค้าคนนั้น</div>
+            <div class="payment-actions">
+              <button class="payment-btn qr" id="qrButton" onclick="openQrConfirm()" disabled>▣ &nbsp; THAI QR PAYMENT</button>
+              <button class="payment-btn cash" id="cashButton" onclick="openCashModal()" disabled>เงินสด</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="qrConfirmModal">
+    <div class="modal confirm-modal">
+      <div class="print-icon">🖨️</div>
+      <div class="confirm-text">ยืนยันที่จะพิมพ์ รายการและ<br>QR ชำระเงินใช่หรือไม่</div>
+      <div class="modal-actions">
+        <button class="modal-btn cancel-btn" onclick="closeModal('qrConfirmModal')">ยกเลิก</button>
+        <button class="modal-btn confirm-btn" id="confirmQrButton" onclick="confirmQrPrint()">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="cashModal">
+    <div class="modal cash-modal">
+      <div class="cash-head">
+        <strong>เงินสด</strong>
+        <button class="cash-close" onclick="closeModal('cashModal')">×</button>
+      </div>
+      <div class="cash-display">
+        <div class="cash-row-big"><span>จำนวนเงินที่ได้รับ</span><strong id="cashReceived">0.00</strong></div>
+        <div class="cash-two">
+          <div class="cash-box"><span>จำนวนที่ต้องชำระ</span><strong id="cashDue">0.00</strong></div>
+          <div class="cash-box change"><span>เงินทอน</span><strong id="cashChange">0.00</strong></div>
+        </div>
+      </div>
+      <div class="keypad">
+        <button class="key" onclick="cashKey('7')">7</button>
+        <button class="key" onclick="cashKey('8')">8</button>
+        <button class="key" onclick="cashKey('9')">9</button>
+        <button class="key" onclick="cashBackspace()">←</button>
+        <button class="key" onclick="cashQuick(1000)">1000</button>
+        <button class="key" onclick="cashKey('4')">4</button>
+        <button class="key" onclick="cashKey('5')">5</button>
+        <button class="key" onclick="cashKey('6')">6</button>
+        <button class="key" onclick="cashClear()">เคลียร์</button>
+        <button class="key" onclick="cashQuick(500)">500</button>
+        <button class="key" onclick="cashKey('1')">1</button>
+        <button class="key" onclick="cashKey('2')">2</button>
+        <button class="key" onclick="cashKey('3')">3</button>
+        <button class="key" onclick="cashKey('00')">00</button>
+        <button class="key" onclick="cashQuick(100)">100</button>
+        <button class="key" onclick="cashKey('0')">0</button>
+        <button class="key" onclick="cashKey('00')">00</button>
+        <button class="key" onclick="cashKey('.')">.</button>
+        <button class="key" onclick="cashQuick(50)">50</button>
+        <button class="key" onclick="cashQuick(currentTotal)">พอดี</button>
+      </div>
+      <button class="cash-ok" id="cashOk" onclick="submitCash()" disabled>ตกลง</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="qrPaymentModal">
+    <div class="modal qr-payment-modal">
+      <div class="qr-payment-head">
+        <strong>THAI QR PAYMENT • เคาน์เตอร์</strong>
+        <button class="qr-payment-close" onclick="closeModal('qrPaymentModal')">×</button>
+      </div>
+      <img class="qr-payment-image" id="cashierQrImage" alt="Mock QR Payment">
+      <div class="qr-payment-amount">ยอดชำระ <strong id="cashierQrAmount">0.00</strong> ฿</div>
+      <div class="qr-payment-note">QR นี้เป็นระบบจำลองสำหรับโปรเจกต์ หลังลูกค้าสแกนและชำระแล้ว ให้พนักงานกด “ยืนยันการชำระเงิน”</div>
+      <div class="qr-payment-actions">
+        <button class="modal-btn cancel-pay" onclick="closeModal('qrPaymentModal')">ยกเลิก</button>
+        <button class="modal-btn confirm-pay" id="confirmQrPaymentButton" onclick="confirmQrPayment()">ยืนยันการชำระเงิน</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="successModal">
+    <div class="modal status-modal">
+      <div class="status-symbol">✅</div>
+      <div class="status-title">ชำระเงินเสร็จสิ้น</div>
+      <div class="status-text" id="successText"></div>
+      <div class="single-action">
+        <button class="modal-btn confirm-btn" onclick="finishSuccess()">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="errorModal">
+    <div class="modal status-modal">
+      <div class="status-symbol">⚠️</div>
+      <div class="status-title">ไม่สามารถดำเนินการได้</div>
+      <div class="status-text" id="errorText"></div>
+      <div class="single-action">
+        <button class="modal-btn cancel-btn" onclick="closeModal('errorModal')">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea"></div>
+
+  <script>
+    const sessionId = <%= session.session_id %>;
+    const tableNumber = '<%= session.table_number %>';
+    const bills = <%- billsJson %>;
+    let multiMode = false;
+    let selectedIds = new Set();
+    let currentTotal = 0;
+    let cashInput = '0';
+    let successNext = 'reload';
+    let qrBusy = false;
+
+    function money(value) {
+      return Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function selectedBills() {
+      return [...selectedIds].map(id => bills[id]).filter(Boolean);
+    }
+
+    function selectCustomer(id) {
+      const bill = bills[id];
+      if (!bill) return;
+
+      if (multiMode) {
+        if (bill.isPaid) return;
+        if (selectedIds.has(id)) selectedIds.delete(id);
+        else selectedIds.add(id);
+      } else {
+        selectedIds.clear();
+        selectedIds.add(id);
+      }
+      updateRows();
+      renderBill();
+    }
+
+    function toggleMultiMode() {
+      multiMode = !multiMode;
+      selectedIds.clear();
+      document.getElementById('leftPanel').classList.toggle('multi', multiMode);
+      document.getElementById('multiCircle').classList.toggle('active', multiMode);
+      updateRows();
+      renderBill();
+    }
+
+    function updateRows() {
+      document.querySelectorAll('.customer-row').forEach(row => {
+        const id = Number(row.dataset.id);
+        const selected = selectedIds.has(id);
+        row.classList.toggle('selected', selected);
+        const check = row.querySelector('.customer-check');
+        if (check) check.checked = selected;
+      });
+    }
+
+    function renderBill() {
+      const selected = selectedBills();
+      const empty = document.getElementById('emptyDetail');
+      const content = document.getElementById('billContent');
+      const scroll = document.getElementById('billScroll');
+
+      if (selected.length === 0) {
+        empty.style.display = 'flex';
+        content.style.display = 'none';
+        currentTotal = 0;
+        return;
+      }
+
+      empty.style.display = 'none';
+      content.style.display = 'flex';
+      let html = '';
+      let subtotal = 0;
+      let service = 0;
+      let total = 0;
+
+      selected.forEach(bill => {
+        subtotal += Number(bill.subtotal);
+        service += Number(bill.service_fee);
+        total += Number(bill.total);
+        html += `<section class="person-section"><div class="person-title">${escapeHtml(bill.customer_name)}</div>`;
+        if (bill.items.length === 0) {
+          html += `<div class="item-row"><span>ไม่มีรายการอาหาร</span><span></span><span class="price">0.00</span></div>`;
+        } else {
+          bill.items.forEach(item => {
+            const sharedText = item.shared ? `<span class="shared">(${item.share_count})</span> ` : '';
+            const star = item.shared ? '<span class="shared-star"> *</span>' : '';
+            html += `<div class="item-row">
+              <span>${escapeHtml(item.menu_name)}</span>
+              <span class="qty">${item.quantity}</span>
+              <span class="price">${sharedText}${money(item.share_amount)}${star}</span>
+            </div>`;
+          });
+        }
+        if (bill.isPaid) html += `<div style="margin-top:8px;color:#29a94a;font-weight:800;">รายการนี้ชำระเงินแล้ว</div>`;
+        html += '</section>';
+      });
+
+      scroll.innerHTML = html;
+      document.getElementById('subtotalText').textContent = money(subtotal);
+      document.getElementById('serviceText').textContent = money(service);
+      document.getElementById('totalText').textContent = money(total);
+      currentTotal = Number(total.toFixed(2));
+
+      const payable = selected.length > 0 && selected.every(b => !b.isPaid) && currentTotal > 0;
+      document.getElementById('qrButton').disabled = !payable;
+      document.getElementById('cashButton').disabled = !payable;
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function showModal(id) { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    function showError(message) {
+      document.getElementById('errorText').textContent = message || 'เกิดข้อผิดพลาด';
+      showModal('errorModal');
+    }
+
+    function openQrConfirm() {
+      if (!canPaySelection()) return;
+      showModal('qrConfirmModal');
+    }
+
+    function canPaySelection() {
+      const selected = selectedBills();
+      return selected.length > 0 && selected.every(b => !b.isPaid) && currentTotal > 0;
+    }
+
+    async function confirmQrPrint() {
+      if (qrBusy || !canPaySelection()) return;
+      qrBusy = true;
+      const button = document.getElementById('confirmQrButton');
+      button.disabled = true;
+      button.textContent = 'กำลังสร้าง QR...';
+
+      try {
+        const response = await fetch('/cashier/api/mock-qr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, customerIds: [...selectedIds] })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.message || 'สร้าง QR ไม่สำเร็จ');
+
+        buildPrintArea(data.qrDataUrl, 'QR');
+        closeModal('qrConfirmModal');
+        window.print();
+        openQrPaymentConfirmation(data.qrDataUrl, data.total);
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        qrBusy = false;
+        button.disabled = false;
+        button.textContent = 'ยืนยัน';
+      }
+    }
+
+    function openQrPaymentConfirmation(qrDataUrl, total) {
+      document.getElementById('cashierQrImage').src = qrDataUrl;
+      document.getElementById('cashierQrAmount').textContent = money(total);
+      showModal('qrPaymentModal');
+    }
+
+    async function confirmQrPayment() {
+      if (!canPaySelection()) return;
+      const button = document.getElementById('confirmQrPaymentButton');
+      button.disabled = true;
+      button.textContent = 'กำลังบันทึก...';
+      try {
+        const result = await completePayment('QR', currentTotal, true);
+        if (!result) return;
+        closeModal('qrPaymentModal');
+        showPaymentSuccess(result);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'ยืนยันการชำระเงิน';
+      }
+    }
+
+    function openCashModal() {
+      if (!canPaySelection()) return;
+      cashInput = '0';
+      updateCashDisplay();
+      showModal('cashModal');
+    }
+
+    function cashKey(key) {
+      if (key === '.') {
+        if (!cashInput.includes('.')) cashInput += '.';
+      } else {
+        if (cashInput === '0' && key !== '00') cashInput = key;
+        else cashInput += key;
+      }
+      if (cashInput.includes('.')) {
+        const decimals = cashInput.split('.')[1] || '';
+        if (decimals.length > 2) cashInput = Number(cashInput).toFixed(2);
+      }
+      if (cashInput.length > 12) cashInput = cashInput.slice(0, 12);
+      updateCashDisplay();
+    }
+
+    function cashQuick(value) {
+      cashInput = Number(value || 0).toFixed(2);
+      updateCashDisplay();
+    }
+
+    function cashClear() {
+      cashInput = '0';
+      updateCashDisplay();
+    }
+
+    function cashBackspace() {
+      cashInput = cashInput.slice(0, -1) || '0';
+      updateCashDisplay();
+    }
+
+    function updateCashDisplay() {
+      const received = Number(cashInput || 0);
+      const change = Math.max(0, received - currentTotal);
+      document.getElementById('cashReceived').textContent = money(received);
+      document.getElementById('cashDue').textContent = money(currentTotal);
+      document.getElementById('cashChange').textContent = money(change);
+      document.getElementById('cashOk').disabled = received < currentTotal || currentTotal <= 0;
+    }
+
+    async function submitCash() {
+      const received = Number(cashInput || 0);
+      if (received < currentTotal) return;
+      const button = document.getElementById('cashOk');
+      button.disabled = true;
+      button.textContent = 'กำลังบันทึก...';
+      try {
+        const result = await completePayment('CASH', received, true);
+        if (!result) return;
+        closeModal('cashModal');
+        buildPrintArea(null, 'CASH', result);
+        window.print();
+        showPaymentSuccess(result);
+      } finally {
+        button.textContent = 'ตกลง';
+        updateCashDisplay();
+      }
+    }
+
+    async function completePayment(method, amountReceived, returnOnly = false) {
+      try {
+        const response = await fetch('/cashier/api/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            customerIds: [...selectedIds],
+            method,
+            amountReceived
+          })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.message || 'บันทึกการชำระเงินไม่สำเร็จ');
+        if (returnOnly) return data;
+        showPaymentSuccess(data);
+        return data;
+      } catch (err) {
+        showError(err.message);
+        return null;
+      }
+    }
+
+    function showPaymentSuccess(data) {
+      successNext = data.sessionStatus === 'CLEANING' ? 'dashboard' : 'reload';
+      let text = `ยอดชำระ ${money(data.total)} บาท`;
+      if (data.method === 'CASH') text += ` • เงินทอน ${money(data.change)} บาท`;
+      if (data.sessionStatus === 'CLEANING') text += ' • ลูกค้าทุกคนชำระครบแล้ว โต๊ะเปลี่ยนเป็นกำลังทำความสะอาด';
+      document.getElementById('successText').textContent = text;
+      showModal('successModal');
+    }
+
+    function finishSuccess() {
+      if (successNext === 'dashboard') location.href = '/cashier';
+      else location.reload();
+    }
+
+    function buildPrintArea(qrDataUrl, method, paymentResult = null) {
+      const selected = selectedBills();
+      const subtotal = selected.reduce((sum, b) => sum + Number(b.subtotal), 0);
+      const service = selected.reduce((sum, b) => sum + Number(b.service_fee), 0);
+      const total = selected.reduce((sum, b) => sum + Number(b.total), 0);
+
+      let itemsHtml = '';
+      selected.forEach(bill => {
+        itemsHtml += `<div class="print-customer">${escapeHtml(bill.customer_name)}</div>`;
+        bill.items.forEach(item => {
+          const shared = item.shared ? ` (${item.share_count} คน)*` : '';
+          itemsHtml += `<div class="print-item"><span>${escapeHtml(item.menu_name)}${shared}</span><span style="text-align:center">${item.quantity}</span><span style="text-align:right">${money(item.share_amount)}</span></div>`;
+        });
+      });
+
+      const qrHtml = qrDataUrl ? `
+        <img class="print-qr" src="${qrDataUrl}" alt="Mock QR">
+        <div class="print-center"><strong>QR จำลองสำหรับการทดลองระบบ</strong></div>
+        <div class="print-center print-mock">QR นี้ไม่ใช่ PromptPay จริง และไม่มีการตัดเงินจริง</div>
+      ` : '';
+
+      const cashHtml = method === 'CASH' && paymentResult ? `
+        <div style="margin-top:10px;border-top:1px dashed #777;padding-top:8px;">
+          <div style="display:flex;justify-content:space-between"><span>รับเงินสด</span><strong>${money(paymentResult.amountReceived)}</strong></div>
+          <div style="display:flex;justify-content:space-between"><span>เงินทอน</span><strong>${money(paymentResult.change)}</strong></div>
+        </div>
+      ` : '';
+
+      document.getElementById('printArea').innerHTML = `
+        <div class="print-sheet">
+          <div class="print-center print-title">ร้านอาหารญี่ปุ่น</div>
+          <div class="print-center print-subtitle">โต๊ะ ${escapeHtml(tableNumber)} • ${method === 'QR' ? 'QR Payment' : 'Cash Payment'}</div>
+          ${itemsHtml}
+          <div class="print-summary">
+            <div><span>ยอดรวม</span><strong>${money(subtotal)}</strong></div>
+            <div><span>ค่าบริการเพิ่มเติม 7%</span><strong>${money(service)}</strong></div>
+            <div class="grand"><span>ยอดที่ต้องชำระ</span><strong>${money(total)}</strong></div>
+          </div>
+          ${cashHtml}
+          ${qrHtml}
+        </div>`;
+    }
+  </script>
+</body>
+</html>

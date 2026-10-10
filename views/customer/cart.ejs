@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>รายการที่เลือกไว้</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="mobile-frame narrow-frame">
+  <div class="cart-header">
+    <a href="/customer/menu" class="back-btn">←</a>
+    <h3>รายการที่เลือกไว้</h3>
+  </div>
+
+  <div class="cart-list">
+    <% if (cart.length === 0) { %>
+      <p class="empty-msg">ยังไม่มีรายการในตะกร้า</p>
+    <% } %>
+
+    <% cart.forEach(item => { %>
+      <div class="cart-row">
+        <span class="item-name"><%= item.name %></span>
+        <span class="item-price"><%= (item.price * item.quantity).toFixed(2) %> ฿</span>
+        <div class="qty-controls">
+          <form action="/customer/cart/update" method="POST">
+            <input type="hidden" name="id" value="<%= item.id %>">
+            <input type="hidden" name="action" value="decrease">
+            <button>−</button>
+          </form>
+          <span><%= item.quantity %></span>
+          <form action="/customer/cart/update" method="POST">
+            <input type="hidden" name="id" value="<%= item.id %>">
+            <input type="hidden" name="action" value="increase">
+            <button>+</button>
+          </form>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="checkout-footer">
+    <div class="total-bar"><span>ยอดรวม</span><strong><%= total.toFixed(2) %> ฿</strong></div>
+    <div class="action-buttons">
+      <a href="/customer/menu" class="btn-outline">+ สั่งอาหารเพิ่ม</a>
+      <form action="/customer/order/checkout" method="POST">
+        <button class="btn-green" <%= cart.length===0?'disabled':'' %>>ยืนยันสั่งอาหาร</button>
+      </form>
+      <a href="/customer/history" class="btn-outline">ดูประวัติการสั่งซื้อ</a>
+    </div>
+  </div>
+</div>
+
+<% if (confirmation) { %>
+<div class="customer-modal show" id="orderSuccessModal">
+  <div class="customer-modal-box order-success-modal-box">
+    <div class="success-circle">✓</div>
+    <h3>สั่งอาหารสำเร็จ</h3>
+    <p class="success-customer">คุณ <strong><%= confirmation.order.customer_name %></strong></p>
+
+    <div class="order-summary">
+      <% confirmation.items.forEach(item => { %>
+        <div class="summary-row">
+          <span><%= item.name %> × <%= item.quantity %></span>
+          <span><%= (item.price * item.quantity).toFixed(2) %> ฿</span>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="summary-total">
+      <span>ยอดรายการนี้</span>
+      <strong><%= Number(confirmation.order.total_price).toFixed(2) %> ฿</strong>
+    </div>
+
+    <div class="prep-message">
+      สถานะ: <span class="status-chip preparing">กำลังเตรียม</span><br>
+      <small>รายการถูกส่งไปยังพนักงานครัวแล้ว</small>
+    </div>
+
+    <div class="action-buttons">
+      <a href="/customer/menu" class="btn-green link-button">สั่งอาหารเพิ่ม</a>
+      <a href="/customer/history" class="btn-outline">ดูประวัติและสถานะ</a>
+    </div>
+  </div>
+</div>
+<script>
+  if (history.replaceState) history.replaceState(null, '', '/customer/cart');
+</script>
+<% } %>
+</body>
+</html>
