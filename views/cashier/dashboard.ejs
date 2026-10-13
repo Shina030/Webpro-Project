@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตรวจสอบการชำระเงิน</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Sarabun', 'TH Sarabun New', Tahoma, sans-serif;
+      background: #f4f5f7;
+      color: #20242a;
+    }
+    .app {
+      width: min(1500px, 96vw);
+      margin: 22px auto;
+      background: #ffffff;
+      border: 1px solid #dfe3e8;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+    .topbar {
+      height: 74px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 0 26px;
+      border-bottom: 1px solid #e6e8eb;
+      background: #fff;
+    }
+    .connected {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #707781;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .connected .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #2fc653;
+      box-shadow: 0 0 0 4px rgba(47,198,83,.12);
+    }
+    .title {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .staff {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #4c535c;
+    }
+    .staff-icon {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #eef1f5;
+      font-size: 16px;
+    }
+    .content { padding: 20px 22px 16px; }
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .table-card {
+      border: 1px solid #d7dce2;
+      border-radius: 10px;
+      overflow: hidden;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      box-shadow: 0 3px 10px rgba(0,0,0,.05);
+    }
+    .card-head {
+      min-height: 48px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      color: white;
+      font-weight: 800;
+      gap: 12px;
+    }
+    .card-head .table-number { font-size: 24px; margin-right: auto; }
+    .card-head .meta { display: flex; align-items: center; gap: 5px; font-size: 14px; white-space: nowrap; }
+    .table-card.unpaid .card-head { background: #f51d28; }
+    .table-card.cleaning .card-head { background: #f2b51f; }
+    .table-card.empty .card-head { background: #9ea3a9; }
+    .card-body {
+      flex: 1;
+      padding: 15px 16px;
+      min-height: 150px;
+    }
+    .customer-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: #1262b3;
+    }
+    .status-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+    .paid { background: #28c353; }
+    .unpaid-dot { background: #ef3138; }
+    .empty-state, .cleaning-state {
+      height: 100%;
+      min-height: 115px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #787f87;
+      font-weight: 700;
+    }
+    .cleaning-state { color: #a47500; }
+    .state-icon { font-size: 32px; opacity: .75; }
+    .pay-button {
+      width: 100%;
+      border: 0;
+      min-height: 44px;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      background: #0f72d8;
+      color: #fff;
+    }
+    .pay-button:hover { background: #075eb9; }
+    .pay-button:disabled {
+      cursor: default;
+      background: #aed6f5;
+      color: rgba(255,255,255,.85);
+    }
+    .legend {
+      min-height: 56px;
+      margin-top: 14px;
+      border-top: 1px solid #e4e7eb;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 10px 4px 0;
+      flex-wrap: wrap;
+      font-size: 14px;
+      font-weight: 700;
+      color: #606770;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 16px; height: 16px; border-radius: 50%; }
+    .legend .yellow { background: #f2b51f; }
+    .legend .gray { background: #9ea3a9; }
+    @media (max-width: 1050px) {
+      .table-grid { grid-template-columns: repeat(3, 1fr); }
+      .title { font-size: 24px; }
+    }
+    @media (max-width: 760px) {
+      .topbar { grid-template-columns: 1fr; height: auto; gap: 10px; padding: 16px; }
+      .connected, .staff { justify-self: center; }
+      .table-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="connected"><span class="dot"></span>Connected</div>
+      <h1 class="title">ตรวจสอบการชำระเงิน</h1>
+      <div class="staff"><span class="staff-icon">👤</span>พนักงานแคชเชียร์</div>
+    </header>
+
+    <section class="content">
+      <div class="table-grid">
+        <% tables.forEach(table => { %>
+          <% const cardClass = table.cardStatus === 'CLEANING' ? 'cleaning' : table.cardStatus === 'UNPAID' ? 'unpaid' : 'empty'; %>
+          <article class="table-card <%= cardClass %>">
+            <div class="card-head">
+              <span class="table-number"><%= table.table_number %></span>
+              <span class="meta">◷ <%= table.elapsed %></span>
+              <span class="meta">👤 <%= table.customerCount %></span>
+            </div>
+
+            <div class="card-body">
+              <% if (table.cardStatus === 'EMPTY') { %>
+                <div class="empty-state">
+                  <div class="state-icon">▦</div>
+                  <div>โต๊ะว่าง</div>
+                </div>
+              <% } else if (table.cardStatus === 'CLEANING') { %>
+                <% table.customers.forEach(customer => { %>
+                  <div class="customer-row">
+                    <span class="status-dot paid"></span>
+                    <span><%= customer.customer_name %></span>
+                  </div>
+                <% }) %>
+                <div class="cleaning-state" style="min-height:42px;justify-content:flex-end;">กำลังทำความสะอาด</div>
+              <% } else { %>
+                <% table.customers.forEach(customer => { %>
+                  <div class="customer-row">
+                    <span class="status-dot <%= customer.isPaid ? 'paid' : 'unpaid-dot' %>"></span>
+                    <span><%= customer.customer_name %></span>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+
+            <% if (table.cardStatus === 'UNPAID') { %>
+              <button class="pay-button" onclick="location.href='/cashier/payment/<%= table.session_id %>'">ชำระเงิน</button>
+            <% } else { %>
+              <button class="pay-button" disabled><%= table.cardStatus === 'CLEANING' ? 'กำลังทำความสะอาด' : 'ชำระเงิน' %></button>
+            <% } %>
+          </article>
+        <% }) %>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot paid"></span>ชำระแล้ว</div>
+        <div class="legend-item"><span class="legend-dot unpaid-dot"></span>ยังไม่ชำระ</div>
+        <div class="legend-item"><span class="legend-dot yellow"></span>กำลังทำความสะอาด</div>
+        <div class="legend-item"><span class="legend-dot gray"></span>ว่าง</div>
+      </div>
+    </section>
+  </main>
+<script>
+let cashierActive=Date.now();document.addEventListener('click',()=>cashierActive=Date.now());setInterval(()=>{if(Date.now()-cashierActive>2500) location.reload();},4000);
+</script>
+</body>
+</html>

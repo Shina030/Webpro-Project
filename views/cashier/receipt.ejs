@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #<%= paymentId %></title>
+    <style>
+        body {
+            background: #ffffff;
+        }
+
+        .receipt-page {
+            width: 80mm;
+            margin: 0 auto;
+            padding: 4mm;
+            background: #ffffff;
+        }
+
+        .receipt-page img {
+            width: 72mm;
+            height: auto;
+            display: block;
+        }
+
+        @media print {
+            @page {
+                size: 80mm 200mm;
+                margin: 0;
+            }
+
+            .receipt-page {
+                width: 80mm;
+                margin: 0;
+                padding: 4mm;
+            }
+        }
+    </style>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="receipt-page">
+        <img id="receiptImage" src="/cashier/receipt/<%= paymentId %>/image" alt="receipt" onload="printReceipt()">
+    </div>
+
+    <script>
+        let printed = false;
+
+        window.addEventListener('afterprint', () => window.close());
+
+        function printReceipt() {
+            if (printed) return;
+            printed = true;
+
+            const image = document.getElementById('receiptImage');
+            const heightMm = Math.max(90, Math.ceil((72 * image.naturalHeight / image.naturalWidth) + 8));
+            const style = document.createElement('style');
+            style.textContent = `@media print { @page { size: 80mm ${heightMm}mm; margin: 0; } }`;
+            document.head.appendChild(style);
+
+            setTimeout(() => window.print(), 150);
+        }
+    </script>
+</body>
+</html>
