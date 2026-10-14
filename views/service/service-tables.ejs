@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Service Staff - Tables</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;background:#f7f8fc;color:#171a2b}.topbar{height:72px;margin:18px 22px;background:linear-gradient(90deg,#6964ee,#817cef);border-radius:10px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;color:#fff}.brand{font-size:22px;font-weight:700}.nav{display:flex;gap:18px;align-items:center}.nav a{color:#fff;text-decoration:none}.page{margin:25px 35px}.tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.filter{font-size:18px;font-weight:700}.filter select{margin-left:8px;padding:10px 38px 10px 14px;border:1px solid #ccd1df;border-radius:8px;background:white;font-size:16px}.qrbtn{border:2px solid #6d68ef;background:#fff;color:#312ccf;border-radius:9px;padding:11px 18px;font-weight:700;text-decoration:none}.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}.table-card{height:130px;border:0;border-radius:8px;box-shadow:0 7px 14px #c8cad2;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;cursor:default;transition:transform .15s,box-shadow .15s,background .25s}.table-card strong{font-size:20px;margin-bottom:15px}.table-card.clickable{cursor:pointer}.table-card.clickable:hover{transform:translateY(-2px);box-shadow:0 9px 18px #b9bcc5}.AVAILABLE{background:#e2e5eb}.OCCUPIED{background:#ff646b}.CLEANING{background:#ffa63e}.legend{display:flex;gap:28px;margin-top:35px;align-items:center;color:#555}.dot{width:15px;height:15px;border-radius:50%;display:inline-block;margin-right:7px}.d1{background:#aeb5c1}.d2{background:#ff535b}.d3{background:#ffa63e}.modal-bg{display:none;position:fixed;inset:0;background:#0008;align-items:center;justify-content:center;z-index:1000}.modal{width:390px;background:white;border-radius:15px;padding:24px;box-shadow:0 20px 60px #0005}.modal h2{text-align:center;font-size:27px;border-bottom:1px solid #ddd;padding-bottom:16px;margin:0 0 25px}.modal p{font-size:18px}.orange{color:#f18a00;font-weight:700}.red{color:#e3202a;font-weight:700}.actions{display:flex;gap:14px;margin-top:35px}.actions button{flex:1;border:0;border-radius:8px;padding:13px;color:white;font-size:17px;font-weight:700}.cancel{background:#e3202a}.save{background:#00a85a}.save:disabled{background:#aeb6bf;cursor:not-allowed}.hint{font-size:14px!important;color:#666;background:#f4f5f7;padding:10px;border-radius:8px;line-height:1.5}@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+  <link rel="stylesheet" href="/styles.css">
+</head><body>
+<div class="topbar"><div class="brand">Japanese Restaurant</div><div class="nav"><span>Service Staff</span><span>|</span><a href="#">Logout</a></div></div>
+<main class="page"><div class="tools"><form method="get"><label class="filter">สถานะ : <select id="statusFilter" name="status" onchange="this.form.submit()"><option value="ALL" <%= status==='ALL'?'selected':'' %>>ทั้งหมด</option><option value="AVAILABLE" <%= status==='AVAILABLE'?'selected':'' %>>ว่าง</option><option value="OCCUPIED" <%= status==='OCCUPIED'?'selected':'' %>>ไม่ว่าง</option><option value="CLEANING" <%= status==='CLEANING'?'selected':'' %>>รอทำความสะอาด</option></select></label></form><a class="qrbtn" href="/service/qr">▦ QR code</a></div>
+<div class="grid" id="tableGrid"></div>
+<div class="legend"><span><i class="dot d1"></i>ว่าง</span><span><i class="dot d2"></i>ไม่ว่าง</span><span><i class="dot d3"></i>รอทำความสะอาด</span></div></main>
+
+<div class="modal-bg" id="cleanModal"><div class="modal"><h2 id="cleanTable">A1</h2><p>สถานะปัจจุบัน : <span class="orange">รอทำความสะอาด</span></p><p>เปลี่ยนสถานะ : <b>ว่าง</b></p><div class="actions"><button type="button" class="cancel" onclick="closeModal('cleanModal')">ยกเลิก</button><button class="save" id="cleanSave">บันทึก</button></div></div></div>
+
+<div class="modal-bg" id="occupiedModal"><div class="modal"><h2 id="occupiedTable">A1</h2><p>สถานะปัจจุบัน : <span class="red">ไม่ว่าง</span></p><p>เปลี่ยนสถานะ : <b>ว่าง</b></p><p class="hint" id="closeHint">กำลังตรวจสอบข้อมูล...</p><div class="actions"><button type="button" class="cancel" onclick="closeModal('occupiedModal')">ยกเลิก</button><button class="save" id="closeSave" disabled>บันทึก</button></div></div></div>
+
+<script>
+const initialTables=<%- JSON.stringify(tables).replace(/</g,'\\u003c') %>;
+let cleanId=null,closeId=null;
+
+function statusLabel(status){return status==='AVAILABLE'?'ว่าง':status==='OCCUPIED'?'ไม่ว่าง':'รอทำความสะอาด'}
+function renderTables(tables){
+  const grid=document.getElementById('tableGrid');
+  grid.innerHTML=tables.map(t=>{
+    const clickable=t.table_status==='CLEANING'||t.table_status==='OCCUPIED';
+    return `<button class="table-card ${t.table_status} ${clickable?'clickable':''}" ${clickable?`onclick="handleTable(${t.table_id},'${String(t.table_number).replace(/'/g,"\\'")}','${t.table_status}')"`:''}><strong>${t.table_number}</strong><span>${statusLabel(t.table_status)}</span></button>`;
+  }).join('');
+}
+renderTables(initialTables);
+
+async function refreshTables(){
+  try{
+    const status=document.getElementById('statusFilter').value;
+    const r=await fetch('/service/api/tables?status='+encodeURIComponent(status),{cache:'no-store'});
+    const d=await r.json();
+    if(r.ok&&d.ok)renderTables(d.tables);
+  }catch(e){}
+}
+setInterval(refreshTables,1200);
+
+function handleTable(id,num,status){
+  if(status==='CLEANING')openCleaning(id,num);
+  if(status==='OCCUPIED')openOccupied(id,num);
+}
+function openCleaning(id,num){cleanId=id;document.getElementById('cleanTable').textContent=num;document.getElementById('cleanModal').style.display='flex'}
+async function saveCleaning(){
+  if(!cleanId)return;
+  const r=await fetch('/service/tables/'+cleanId+'/available',{method:'POST',headers:{Accept:'application/json'}});
+  const d=await r.json();
+  if(!r.ok||!d.ok){alert(d.message||'เกิดข้อผิดพลาด');return}
+  closeModal('cleanModal');await refreshTables();
+}
+document.getElementById('cleanSave').addEventListener('click',saveCleaning);
+
+async function openOccupied(id,num){
+  closeId=id;document.getElementById('occupiedTable').textContent=num;document.getElementById('closeHint').textContent='กำลังตรวจสอบข้อมูล...';document.getElementById('closeSave').disabled=true;document.getElementById('occupiedModal').style.display='flex';
+  try{
+    const r=await fetch('/service/tables/'+id+'/close-info',{cache:'no-store'});const d=await r.json();
+    document.getElementById('closeHint').textContent=d.message||'ไม่สามารถตรวจสอบข้อมูลได้';
+    document.getElementById('closeSave').disabled=!(r.ok&&d.ok&&d.canClose);
+  }catch(e){document.getElementById('closeHint').textContent='ไม่สามารถตรวจสอบข้อมูลได้'}
+}
+async function saveClose(){
+  if(!closeId)return;
+  const r=await fetch('/service/tables/'+closeId+'/close',{method:'POST',headers:{Accept:'application/json'}});const d=await r.json();
+  if(!r.ok||!d.ok){alert(d.message||'ไม่สามารถปิดโต๊ะได้');return}
+  closeModal('occupiedModal');await refreshTables();
+}
+document.getElementById('closeSave').addEventListener('click',saveClose);
+
+function closeModal(id){document.getElementById(id).style.display='none'}
+['cleanModal','occupiedModal'].forEach(id=>document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id)closeModal(id)}));
+</script></body></html>
