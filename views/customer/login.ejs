@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ยินดีต้อนรับสู่ร้านอาหารญี่ปุ่น</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="customer-page">
+  <div class="mobile-frame narrow-frame">
+    <div class="card header-card login-card">
+      <div class="table-pill">โต๊ะ <%= tableNumber %></div>
+      <h2>ยินดีต้อนรับสู่<br>ร้านอาหารญี่ปุ่น</h2>
+      <div class="instructions">
+        <p><strong>วิธีการใช้งาน</strong></p>
+        <ol>
+          <li>ใส่ชื่อของคุณและเริ่มทำการสั่งซื้อ</li>
+          <li>สั่งอาหารเพิ่มได้ตลอดระหว่าง session</li>
+          <li>เมื่อทานเสร็จสามารถแยกบิล หรือรวมบิลเลี้ยงทั้งโต๊ะได้</li>
+        </ol>
+      </div>
+      <form action="/customer/login" method="POST" class="stack-form">
+        <input type="hidden" name="token" value="<%= token %>">
+        <input type="text" name="username" placeholder="ใส่ชื่อของคุณ" maxlength="60" required autocomplete="off">
+        <button type="submit" class="btn-green">เริ่มทำการสั่งซื้อ</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "japanese-restaurant-qr-demo",
+  "version": "1.0.0",
+  "description": "Integrated Web Programming demo: customer, service staff, kitchen and cashier actors",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "reset-db": "node scripts/reset-db.js"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.18.2",
+    "qrcode": "^1.5.4",
+    "sqlite3": "^6.0.1"
+  }
+}
