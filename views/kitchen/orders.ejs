@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ได้รับรายการอาหาร - ครัว</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="kitchen-page">
+  <header class="topbar">
+    <div aria-hidden="true"></div>
+    <div class="kitchen-waiting">รอดำเนินการ <span id="waiting-count"><%= orders.length %></span></div>
+    <nav class="kitchen-nav"><a class="active" href="/kitchen/orders">หน้าหลัก</a><a href="/kitchen/status">สถานะ</a></nav>
+  </header>
+
+  <main class="container">
+    <h1 class="screen-title">ได้รับรายการอาหาร</h1>
+    <div class="no-order" id="no-order" style="<%= orders.length ? 'display:none' : '' %>">ยังไม่มีออเดอร์ใหม่</div>
+    <div class="order-list" id="order-list"></div>
+  </main>
+
+<script>
+const initialOrders = <%- JSON.stringify(orders).replace(/</g, '\\u003c') %>;
+let busyOrderId = null;
+let lastSignature = '';
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function orderSignature(orders){
+  return JSON.stringify(orders.map(order => [order.Order_Id, order.Order_Status, order.items.map(item => [item.Menu_Name,item.Quantity])]));
+}
+
+function orderCardHtml(order){
+  const items = order.items.map((item,index) => `
+    <div class="menu-item">
+      <span class="item-index">${index+1}</span>
+      <span class="quantity">${escapeHtml(item.Quantity)}</span>
+      <span class="menu-name">${escapeHtml(item.Menu_Name)}</span>
+    </div>`).join('');
+
+  return `
+    <article class="order-card" id="order-${order.Order_Id}" data-order-id="${order.Order_Id}">
+      <div class="order-header">
+        <span class="order-id">${String(order.Order_Id).padStart(4,'0')}</span>
+        <span class="table-number">${escapeHtml(order.Table_Number)}</span>
+      </div>
+      <div class="order-body">
+        <p class="order-meta"><span>ลูกค้า: <strong>${escapeHtml(order.Customer_Name)}</strong></span><span>${escapeHtml(order.Order_Time)}</span></p>
+        <div class="menu-list">${items}</div>
+      </div>
+      <button type="button" class="print-button" onclick="printOrder(${order.Order_Id})">พิมพ์</button>
+    </article>`;
+}
+
+function renderOrders(orders, force=false){
+  const signature = orderSignature(orders);
+  if (!force && signature === lastSignature) return;
+  if (busyOrderId) return;
+
+  lastSignature = signature;
+  document.getElementById('waiting-count').textContent = orders.length;
+  document.getElementById('no-order').style.display = orders.length ? 'none' : 'block';
+  document.getElementById('order-list').innerHTML = orders.map(orderCardHtml).join('');
+}
+
+async function refreshOrders(){
+  if (busyOrderId) return;
+  try {
+    const response = await fetch('/kitchen/api/orders?view=main', { cache:'no-store' });
+    const data = await response.json();
+    if (response.ok && data.ok) renderOrders(data.orders);
+  } catch (error) {}
+}
+
+function setKitchenPaperSize(card){
+  if(!card) return;
+  const heightMm=Math.max(90,Math.ceil((card.scrollHeight*25.4/96)+8));
+  let style=document.getElementById('kitchenPaperStyle');
+  if(!style){
+    style=document.createElement('style');
+    style.id='kitchenPaperStyle';
+    document.head.appendChild(style);
+  }
+  style.textContent=`@media print{@page{size:80mm ${heightMm}mm;margin:0}}`;
+}
+
+async function printOrder(orderId){
+  if (busyOrderId) return;
+  busyOrderId = orderId;
+  const card = document.getElementById(`order-${orderId}`);
+  if (!card) { busyOrderId = null; return; }
+
+  card.classList.add('print-target');
+  document.body.classList.add('printing-order');
+  setKitchenPaperSize(card);
+  window.print();
+  card.classList.remove('print-target');
+  document.body.classList.remove('printing-order');
+
+  try {
+    const response = await fetch(`/kitchen/orders/${orderId}/print`, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error('ไม่สามารถย้ายออเดอร์ไปหน้าสถานะได้');
+
+    card.classList.add('order-leaving');
+    setTimeout(() => {
+      card.remove();
+      const remaining = document.querySelectorAll('#order-list .order-card').length;
+      document.getElementById('waiting-count').textContent = remaining;
+      document.getElementById('no-order').style.display = remaining ? 'none' : 'block';
+      busyOrderId = null;
+      lastSignature = '';
+      refreshOrders();
+    }, 180);
+  } catch (error) {
+    busyOrderId = null;
+    alert(error.message);
+  }
+}
+
+renderOrders(initialOrders, true);
+setInterval(refreshOrders, 1800);
+</script>
+</body>
+</html>

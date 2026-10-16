@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>เลือกผู้ร่วมหาร</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="customer-page"><div class="mobile-frame narrow-frame share-page">
+  <div class="page-title-row"><a href="/customer/history" class="back-btn">←</a><h3>เลือกผู้ร่วมหาร</h3><span></span></div>
+  <div class="share-explain">รายการถูกแยกตาม <strong>คนสั่ง + ออเดอร์</strong> และลูกค้าทุกคนในโต๊ะสามารถแก้ผู้ร่วมหารของรายการใดก็ได้</div>
+  <% if (sharingLocked) { %><div class="notice-box">โต๊ะนี้เริ่มมีการชำระเงินแล้ว ไม่สามารถแก้ผู้ร่วมหารได้</div><% } %>
+
+  <% if (groups.length===0) { %><div class="empty-msg">ยังไม่มีรายการอาหาร</div><% } %>
+  <% groups.forEach(group=>{ %>
+    <section class="share-person-section">
+      <h4><%= group.customer_name %><%= group.customer_id===currentCustomerId?' (คุณ)':'' %></h4>
+      <% group.orders.forEach(order=>{ %>
+        <div class="share-order-card">
+          <div class="share-order-head"><span>ออเดอร์ #<%= order.order_id %></span><small><%= order.order_time %></small></div>
+          <% order.items.forEach(item=>{ const participantIds=item.participants.map(p=>p.customer_id).join(','); %>
+            <div class="share-item-row">
+              <div class="share-item-info">
+                <strong><%= item.menu_name %></strong>
+                <small>จำนวน <%= item.quantity %> • <%= (item.unit_price*item.quantity).toFixed(2) %> ฿</small>
+                <div class="participant-line"><span>หารกับ:</span><span class="participant-names"><%= item.participants.map(p=>p.customer_name).join(', ') || '-' %></span></div>
+              </div>
+              <% if (!sharingLocked) { %>
+                <button class="person-share-icon" onclick="openShare(<%= order.order_id %>,'<%= item.menu_id %>','<%= participantIds %>','<%- item.menu_name.replace(/'/g, "\\'") %>')" aria-label="เลือกผู้ร่วมหาร">👤+</button>
+              <% } else { %>
+                <button class="person-share-icon disabled" disabled title="โต๊ะนี้เริ่มมีการชำระเงินแล้ว">👤</button>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+      <% }) %>
+    </section>
+  <% }) %>
+</div>
+
+<div class="customer-modal" id="shareModal"><div class="customer-modal-box"><button class="modal-x" type="button" onclick="closeShare()">×</button><h3>เลือกผู้ร่วมหาร</h3><p id="shareMenuName" class="share-modal-menu"></p><form action="/customer/history/share" method="POST" id="shareForm"><input type="hidden" name="order_id" id="shareOrder"><input type="hidden" name="menu_id" id="shareMenu">
+  <div class="people-list"><% people.forEach(person=>{ %><label><input type="checkbox" name="participant_ids" value="<%= person.customer_id %>" data-person-id="<%= person.customer_id %>"><span><%= person.customer_name %><%= person.customer_id===currentCustomerId?' (คุณ)':'' %></span></label><% }) %></div>
+  <div class="modal-actions"><button type="button" class="btn-outline" onclick="closeShare()">ยกเลิก</button><button class="btn-green">ตกลง</button></div>
+</form></div></div>
+<script>
+const currentCustomerId=<%= currentCustomerId %>;
+function openShare(orderId,menuId,ids,name){
+  document.getElementById('shareOrder').value=orderId;document.getElementById('shareMenu').value=menuId;document.getElementById('shareMenuName').textContent=name;
+  const selected=new Set(String(ids).split(',').filter(Boolean).map(Number));
+  document.querySelectorAll('[data-person-id]').forEach(cb=>{const id=Number(cb.dataset.personId);cb.checked=selected.has(id);});
+  document.getElementById('shareModal').classList.add('show');
+}
+function closeShare(){document.getElementById('shareModal').classList.remove('show')}
+document.getElementById('shareModal').addEventListener('click',e=>{if(e.target.id==='shareModal')closeShare()});
+</script></body></html>

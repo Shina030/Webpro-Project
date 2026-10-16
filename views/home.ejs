@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Japanese Restaurant Demo</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:'Sarabun','TH Sarabun New',Tahoma,sans-serif;background:#f4f5f8;color:#20242a}.wrap{max-width:1050px;margin:70px auto;padding:24px}.head{text-align:center;margin-bottom:34px}.head h1{font-size:34px;margin:0 0 10px}.head p{color:#69717b}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.card{display:block;background:white;border:1px solid #e0e4e9;border-radius:16px;padding:28px;text-decoration:none;color:inherit;box-shadow:0 7px 20px #00000010;transition:.15s}.card:hover{transform:translateY(-3px);box-shadow:0 12px 28px #00000018}.icon{font-size:38px}.card h2{margin:12px 0 8px}.card p{margin:0;color:#6a727c;line-height:1.5}.customer{border-top:6px solid #2e7d32}.service{border-top:6px solid #706bed}.kitchen{border-top:6px solid #1687e8}.cashier{border-top:6px solid #ef222c}@media(max-width:720px){.grid{grid-template-columns:1fr}.wrap{margin-top:25px}}
+  </style>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="head"><h1>Japanese Restaurant</h1><p>Web Programming Project • ระบบสั่งอาหารผ่าน QR Code</p></div>
+    <div class="grid">
+      <a class="card service" href="/service/tables"><div class="icon">🪑</div><h2>พนักงานบริการ</h2><p>ตรวจสอบโต๊ะ เปิด session สร้างและพิมพ์ QR Code</p></a>
+      <a class="card kitchen" href="/kitchen/orders"><div class="icon">🍳</div><h2>พนักงานครัว</h2><p>รับรายการอาหารและอัปเดตสถานะเป็นเสร็จแล้ว</p></a>
+      <a class="card cashier" href="/cashier"><div class="icon">🧾</div><h2>พนักงานแคชเชียร์</h2><p>ตรวจสอบสถานะการจ่าย แยกจ่ายหรือรับหลายคนพร้อมกัน</p></a>
+      <a class="card customer" href="/customer/demo"><div class="icon">📱</div><h2>ลูกค้า</h2><p>เข้าผ่าน QR ที่พนักงานบริการสร้าง (ลิงก์นี้ใช้ดูคำแนะนำ)</p></a>
+    </div>
+  </main>
+</body>
+</html>
